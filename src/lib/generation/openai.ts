@@ -16,6 +16,18 @@ function getModel(): string {
   return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 }
 
+/** Approx chars-per-token ratio for truncation. 128K token context means
+ *  we keep ~300K chars to leave room for the system prompt and response. */
+const MAX_INPUT_CHARS = 300_000;
+
+function truncateContent(content: string): string {
+  if (content.length <= MAX_INPUT_CHARS) return content;
+  const head = content.slice(0, MAX_INPUT_CHARS * 0.6);
+  const tail = content.slice(-Math.round(MAX_INPUT_CHARS * 0.35));
+  const note = `\n\n[NOTE: The original requirement was ${content.length.toLocaleString()} characters. The middle portion has been removed to fit within the model's context window. Shown here are the beginning (${head.length.toLocaleString()} chars) and end (${tail.length.toLocaleString()} chars).]\n\n`;
+  return head + note + tail;
+}
+
 const SYSTEM_PROMPT = `You are a senior QA functional tester. You MUST respond with valid JSON only, no markdown, no code fences.
 
 ${GENERATION_INSTRUCTIONS}
@@ -106,10 +118,11 @@ async function requestGeneration(
 
 export async function generateTestCases(content: string) {
   const model = getModel();
+  const truncated = truncateContent(content);
   let firstError: unknown;
 
   try {
-    const output = await requestGeneration(model, content);
+    const output = await requestGeneration(model, truncated);
     return output.kind === "clarification"
       ? { kind: "clarification" as const, questions: output.questions }
       : { kind: "success" as const, testCases: normalizeModelOutput(output) };
@@ -120,7 +133,7 @@ export async function generateTestCases(content: string) {
 
   try {
     const feedback = firstError instanceof Error ? firstError.message : "Malformed output";
-    const output = await requestGeneration(model, content, feedback.slice(0, 300));
+    const output = await requestGeneration(model, truncated, feedback.slice(0, 300));
     return output.kind === "clarification"
       ? { kind: "clarification" as const, questions: output.questions }
       : { kind: "success" as const, testCases: normalizeModelOutput(output) };
