@@ -216,10 +216,10 @@ export function Generator() {
                 value={sourceValue}
                 onChange={(event) => setSourceValue(event.target.value)}
                 placeholder="Paste the complete requirement here…"
-                maxLength={50_000}
+                maxLength={200_000}
                 required
               />
-              <small>{sourceValue.length.toLocaleString()} / 50,000 characters</small>
+              <small>{sourceValue.length.toLocaleString()} / 200,000 characters</small>
             </label>
           )}
 
