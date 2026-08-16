@@ -30,9 +30,9 @@ export async function fromUploadedFile(file: File): Promise<NormalizedRequiremen
       // pdfjs-dist (used by pdf-parse) needs DOMMatrix which isn't available
       // in serverless runtimes like Vercel. Polyfill it before importing.
       if (typeof globalThis.DOMMatrix === "undefined") {
-        // @ts-expect-error - Minimal DOMMatrix polyfill for pdfjs
-        globalThis.DOMMatrix = class DOMMatrix {
-          constructor() { this.a = this.d = 1; this.b = this.c = this.e = this.f = 0; }
+        // @ts-expect-error - Minimal DOMMatrix polyfill for pdfjs on serverless runtimes
+        globalThis.DOMMatrix = class {
+          a = 1; d = 1; b = 0; c = 0; e = 0; f = 0;
           multiply() { return this; }
           translate() { return this; }
           scale() { return this; }
@@ -41,7 +41,7 @@ export async function fromUploadedFile(file: File): Promise<NormalizedRequiremen
           skewY() { return this; }
           inverse() { return this; }
           toString() { return "matrix(1,0,0,1,0,0)"; }
-        };
+        } as unknown as typeof DOMMatrix;
       }
       const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: bytes });
