@@ -1,4 +1,3 @@
-import { PDFParse } from "pdf-parse";
 import type { NormalizedRequirement } from "@/lib/sources/types";
 import {
   ensureUsableContent,
@@ -27,6 +26,8 @@ export async function fromUploadedFile(file: File): Promise<NormalizedRequiremen
   let text: string;
 
   if (kind === "pdf") {
+    // Dynamic import to avoid loading pdfjs on Vercel for non-PDF requests
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: bytes });
     try {
       text = (await parser.getText()).text;
