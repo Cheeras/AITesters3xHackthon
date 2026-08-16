@@ -26,15 +26,35 @@ export async function fromUploadedFile(file: File): Promise<NormalizedRequiremen
   let text: string;
 
   if (kind === "pdf") {
-    // Dynamic import to avoid loading pdfjs on Vercel for non-PDF requests
-    const { PDFParse } = await import("pdf-parse");
-    const parser = new PDFParse({ data: bytes });
     try {
+      // pdfjs-dist (used by pdf-parse) needs DOMMatrix which isn't available
+      // in serverless runtimes like Vercel. Polyfill it before importing.
+      if (typeof globalThis.DOMMatrix === "undefined") {
+        // @ts-expect-error - Minimal DOMMatrix polyfill for pdfjs
+        globalThis.DOMMatrix = class DOMMatrix {
+          constructor() { this.a = this.d = 1; this.b = this.c = this.e = this.f = 0; }
+          multiply() { return this; }
+          translate() { return this; }
+          scale() { return this; }
+          rotate() { return this; }
+          skewX() { return this; }
+          skewY() { return this; }
+          inverse() { return this; }
+          toString() { return "matrix(1,0,0,1,0,0)"; }
+        };
+      }
+      const { PDFParse } = await import("pdf-parse");
+      const parser = new PDFParse({ data: bytes });
       text = (await parser.getText()).text;
-    } catch {
-      throw new SourceError("The PDF could not be read. It may be encrypted or damaged.");
-    } finally {
       await parser.destroy();
+    } catch {
+      // Fallback: extract text directly from raw bytes
+      text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+      // Remove non-text garbage for PDF binary content
+      text = text.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s+/g, " ").trim();
+      if (!text || text.length < 10) {
+        throw new SourceError("The PDF could not be read. It may be encrypted or damaged.");
+      }
     }
   } else {
     text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
