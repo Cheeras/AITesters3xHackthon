@@ -1,7 +1,7 @@
 import type { SourceMetadata } from "@/lib/types";
 
-export const MAX_FILE_BYTES = 5 * 1024 * 1024;
-export const MAX_REQUIREMENT_CHARACTERS = 200_000;
+export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+export const MAX_REQUIREMENT_CHARACTERS = 1_000_000;
 
 export interface NormalizedRequirement {
   source: SourceMetadata;
