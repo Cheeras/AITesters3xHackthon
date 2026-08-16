@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { validateFileInput } from "@/lib/sources/file";
 import { fetchGitHubIssue, parseGitHubIssueReference } from "@/lib/sources/github";
 import { fetchJiraIssue, parseJiraKey } from "@/lib/sources/jira";
-import { MAX_FILE_BYTES } from "@/lib/sources/types";
 import { fromPastedText } from "@/lib/sources/text";
 
 const originalEnvironment = { ...process.env };
@@ -30,13 +28,6 @@ describe("source validation", () => {
       parseGitHubIssueReference("https://github.com/openai/openai-node/issues/42"),
     ).toEqual({ owner: "openai", repository: "openai-node", issueNumber: 42 });
     expect(() => parseGitHubIssueReference("#42")).toThrow("owner/repository#123");
-  });
-
-  it("validates supported file types and size", () => {
-    expect(validateFileInput({ name: "prd.PDF", type: "", size: 100 })).toBe("pdf");
-    expect(validateFileInput({ name: "story.txt", type: "text/plain", size: 100 })).toBe("txt");
-    expect(() => validateFileInput({ name: "prd.docx", type: "application/octet-stream", size: 100 })).toThrow("PDF or TXT");
-    expect(() => validateFileInput({ name: "prd.pdf", type: "application/pdf", size: MAX_FILE_BYTES + 1 })).toThrow("5 MB");
   });
 
   it("normalizes pasted text and rejects empty input", () => {

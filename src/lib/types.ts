@@ -1,7 +1,7 @@
 export const LLM_PROVIDERS = ["groq"] as const;
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 
-export const SOURCE_TYPES = ["jira", "github", "file", "text"] as const;
+export const SOURCE_TYPES = ["jira", "github", "text"] as const;
 
 export type SourceType = (typeof SOURCE_TYPES)[number];
 

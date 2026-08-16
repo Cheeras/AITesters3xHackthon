@@ -29,7 +29,6 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const rawSourceType = formData.get("sourceType");
     const sourceValue = formData.get("sourceValue");
-    const fileValue = formData.get("file");
 
     if (
       typeof rawSourceType !== "string" ||
@@ -41,11 +40,9 @@ export async function POST(request: Request) {
       throw new SourceError("The source value is invalid.");
     }
 
-    const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
     const requirement = await resolveRequirement(
       rawSourceType as SourceType,
       sourceValue ?? "",
-      file,
     );
     const generation = await generateTestCases(requirement.content);
 

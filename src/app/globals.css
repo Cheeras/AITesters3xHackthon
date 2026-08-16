@@ -225,22 +225,6 @@ button { color: inherit; }
 .field textarea { line-height: 1.55; min-height: 160px; resize: vertical; }
 .field input:focus, .field textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(13, 107, 79, .1); }
 .field small { color: #7d8782; display: block; font-size: 11px; margin-top: 9px; text-align: right; }
-.dropzone {
-  align-items: center;
-  background: repeating-linear-gradient(135deg, rgba(13,107,79,.02), rgba(13,107,79,.02) 8px, transparent 8px, transparent 16px);
-  border: 1px dashed #91a79c;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  margin-top: 20px;
-  padding: 32px 20px;
-  text-align: center;
-}
-.dropzone.has-file { background: #eff8f3; border-style: solid; }
-.dropzone input { height: 1px; opacity: 0; position: absolute; width: 1px; }
-.upload-symbol { color: var(--green); font-family: Georgia, serif; font-size: 28px; margin-bottom: 10px; }
-.dropzone strong { font-size: 16px; }
-.dropzone small { color: var(--muted); margin-top: 6px; }
 .form-actions { align-items: center; border-top: 1px solid var(--line); display: flex; justify-content: space-between; margin-top: 24px; padding-top: 20px; }
 .form-actions p { color: var(--muted); font-size: 11px; margin: 0; }
 .shield { color: var(--green); font-weight: 800; margin-right: 6px; }

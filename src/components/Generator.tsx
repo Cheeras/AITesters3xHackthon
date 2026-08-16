@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CSV_HEADERS, testCasesToCsv } from "@/lib/csv";
 import type {
   ConfigurationStatus,
@@ -28,12 +28,6 @@ const SOURCES: Array<{
     label: "GitHub issue",
     shortLabel: "GH",
     description: "Load a public or token-authorized issue.",
-  },
-  {
-    id: "file",
-    label: "PRD upload",
-    shortLabel: "UP",
-    description: "Extract requirements from PDF or TXT.",
   },
   {
     id: "text",
@@ -65,13 +59,11 @@ const TABLE_VALUES: Array<(testCase: TestCase) => string> = [
 export function Generator() {
   const [sourceType, setSourceType] = useState<SourceType>("jira");
   const [sourceValue, setSourceValue] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<GenerationResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<ConfigurationStatus | null>(null);
   const [llmProvider, setLlmProvider] = useState<LlmProvider>("groq");
-  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/generate")
@@ -86,10 +78,8 @@ export function Generator() {
   function chooseSource(source: SourceType) {
     setSourceType(source);
     setSourceValue("");
-    setFile(null);
     setResult(null);
     setError("");
-    if (fileInput.current) fileInput.current.value = "";
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -103,7 +93,6 @@ export function Generator() {
       formData.set("sourceType", sourceType);
       formData.set("sourceValue", sourceValue);
       formData.set("llmProvider", llmProvider);
-      if (file) formData.set("file", file);
 
       const response = await fetch("/api/generate", { method: "POST", body: formData });
       const body = (await response.json()) as GenerationResponse | { error?: string };
@@ -144,7 +133,7 @@ export function Generator() {
 
       <main className="main-area">
         <header className="page-header">
-          <h1>AI Testcase Generator for JIRA,Git Hub issue and PRD</h1>
+          <h1>AI Testcase Generator for JIRA,Git Hub issue</h1>
         </header>
 
         <div className="source-grid" role="tablist" aria-label="Requirement source">
@@ -191,21 +180,6 @@ export function Generator() {
                 required
               />
               <small>Public issues work without a token; private repositories require one.</small>
-            </label>
-          )}
-
-          {sourceType === "file" && (
-            <label className={`dropzone ${file ? "has-file" : ""}`}>
-              <input
-                ref={fileInput}
-                type="file"
-                accept=".pdf,.txt,application/pdf,text/plain"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                required
-              />
-              <span className="upload-symbol">↑</span>
-              <strong>{file ? file.name : "Drop a PRD here or browse"}</strong>
-              <small>{file ? `${(file.size / 1024).toFixed(1)} KB selected` : "PDF or TXT · maximum 5 MB"}</small>
             </label>
           )}
 
