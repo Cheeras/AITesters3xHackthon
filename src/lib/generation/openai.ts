@@ -16,13 +16,13 @@ function getModel(): string {
   return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 }
 
-/** Approx chars-per-token ratio for truncation. 128K token context means
- *  we keep ~300K chars to leave room for the system prompt and response. */
-const MAX_INPUT_CHARS = 300_000;
+/** Safe character limit for llama-3.3-70b-versatile (128K token context).
+ *  Account for the system prompt + wrapper markup to stay under the limit. */
+const MAX_INPUT_CHARS = 80_000;
 
 function truncateContent(content: string): string {
   if (content.length <= MAX_INPUT_CHARS) return content;
-  const head = content.slice(0, MAX_INPUT_CHARS * 0.6);
+  const head = content.slice(0, Math.round(MAX_INPUT_CHARS * 0.6));
   const tail = content.slice(-Math.round(MAX_INPUT_CHARS * 0.35));
   const note = `\n\n[NOTE: The original requirement was ${content.length.toLocaleString()} characters. The middle portion has been removed to fit within the model's context window. Shown here are the beginning (${head.length.toLocaleString()} chars) and end (${tail.length.toLocaleString()} chars).]\n\n`;
   return head + note + tail;
