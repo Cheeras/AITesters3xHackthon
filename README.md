@@ -120,21 +120,13 @@ npm run build
 
 ## 🖼️ Screenshots
 
-### Home Page
+| View | Description |
+|------|-------------|
+| **Home Page** | [View Live](https://ai-testers3x-hackthon-two.vercel.app) — Main interface with source selector tabs (Jira, GitHub, Paste text) and the settings sidebar on the left showing connection status and LLM provider configuration |
+| **Generated Test Cases** | After pasting a requirement or entering a Jira/GitHub issue, the app generates structured test cases in a detailed table with Scenario, TID, Test Data, Description, PreCondition, Test Steps, Expected Results, Priority, and more. Results can be downloaded as CSV. |
+| **Settings Sidebar** | The left sidebar provides LLM provider selection (Groq with LLaMA 3.3 70B) and a "Test all" button to verify Groq, Jira, and GitHub connections are reachable before generating. |
 
-![TraceQA - AI Test Case Generator](https://ai-testers3x-hackthon-two.vercel.app)
-
-*The main interface showing the source selector (Jira, GitHub, Paste text) and the settings sidebar on the left with connection status and LLM provider configuration.*
-
-### Generated Test Cases
-
-After pasting a requirement or entering a Jira/GitHub issue, the app generates structured test cases in a table format with columns for Scenario, TID, Test Data, Description, PreCondition, Test Steps, Expected Results, Priority, and more. Results can be downloaded as a CSV file.
-
-### Settings Sidebar
-
-The left sidebar provides:
-- **LLM Provider** — Select between Groq (mixtral-8x7b-32768)
-- **Connection Testing** — Test all service connections (Groq, Jira, GitHub) to verify they're reachable before generating
+> **Try the live app:** [https://ai-testers3x-hackthon-two.vercel.app](https://ai-testers3x-hackthon-two.vercel.app)
 
 ---
 
