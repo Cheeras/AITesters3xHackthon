@@ -24,3 +24,5 @@ Thumbs.db
 .env.example
 .next
 *.txt
+.vercel
+.env*

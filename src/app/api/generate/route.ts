@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { generateTestCases, GenerationError } from "@/lib/generation/openai";
 import { resolveRequirement } from "@/lib/sources";
 import { SourceError } from "@/lib/sources/types";
-import { SOURCE_TYPES, LLM_PROVIDERS, type ConfigurationStatus, type SourceType, type LlmProvider } from "@/lib/types";
+import { SOURCE_TYPES, type ConfigurationStatus, type SourceType } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,7 +30,6 @@ export async function POST(request: Request) {
     const rawSourceType = formData.get("sourceType");
     const sourceValue = formData.get("sourceValue");
     const fileValue = formData.get("file");
-    const rawProvider = formData.get("llmProvider");
 
     if (
       typeof rawSourceType !== "string" ||
@@ -42,18 +41,13 @@ export async function POST(request: Request) {
       throw new SourceError("The source value is invalid.");
     }
 
-    const provider =
-      typeof rawProvider === "string" && LLM_PROVIDERS.includes(rawProvider as LlmProvider)
-        ? (rawProvider as LlmProvider)
-        : "groq";
-
     const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
     const requirement = await resolveRequirement(
       rawSourceType as SourceType,
       sourceValue ?? "",
       file,
     );
-    const generation = await generateTestCases(requirement.content, provider);
+    const generation = await generateTestCases(requirement.content);
 
     return NextResponse.json({ ...generation, source: requirement.source });
   } catch (error) {

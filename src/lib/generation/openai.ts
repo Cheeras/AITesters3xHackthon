@@ -1,11 +1,9 @@
-import OpenAI from "openai";
 import { buildRequirementInput, GENERATION_INSTRUCTIONS } from "@/lib/generation/prompt";
 import {
   modelOutputSchema,
   normalizeModelOutput,
   type ModelOutput,
 } from "@/lib/validation";
-import type { LlmProvider } from "@/lib/types";
 
 export class GenerationError extends Error {
   constructor(message: string, public readonly status = 502) {
@@ -14,32 +12,8 @@ export class GenerationError extends Error {
   }
 }
 
-function buildClient(): OpenAI {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) throw new GenerationError("Groq is not configured (GROQ_API_KEY missing).", 503);
-  return new OpenAI({
-    apiKey: key,
-    baseURL: "https://api.groq.com/openai/v1",
-  });
-}
-
 function getModel(): string {
   return process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
-}
-
-function rethrowApiError(error: unknown, provider: string): void {
-  if (!(error instanceof OpenAI.APIError)) return;
-  if (error.status === 429) {
-    throw new GenerationError(`${provider} rate-limited the request. Try again later.`, 429);
-  }
-  if (error.status === 401 || error.status === 403) {
-    throw new GenerationError(`${provider} rejected the configured API key.`, 502);
-  }
-  // Log details for debugging
-  if (error.status) {
-    console.error(`Groq API error (${error.status}):`, error.message);
-  }
-  throw new GenerationError(`${provider} could not process the request.`, 502);
 }
 
 const SYSTEM_PROMPT = `You are a senior QA functional tester. You MUST respond with valid JSON only, no markdown, no code fences.
@@ -66,29 +40,60 @@ Your response must be a JSON object matching exactly this schema:
 }`;
 
 async function requestGeneration(
-  client: OpenAI,
   model: string,
   content: string,
   retryFeedback?: string,
 ): Promise<ModelOutput> {
-  const messages: Array<{ role: "system" | "user"; content: string }> = [
-    { role: "system", content: retryFeedback ? `${SYSTEM_PROMPT}\n\nPrevious attempt feedback: ${retryFeedback}` : SYSTEM_PROMPT },
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new GenerationError("Groq is not configured (GROQ_API_KEY missing).", 503);
+
+  const messages: Array<{ role: string; content: string }> = [
+    { role: "system", content: retryFeedback
+      ? `${SYSTEM_PROMPT}\n\nPrevious attempt feedback: ${retryFeedback}`
+      : SYSTEM_PROMPT },
     { role: "user", content: buildRequirementInput(content) },
   ];
 
-  const response = await client.chat.completions.create({
-    model,
-    messages,
-    temperature: 0.1,
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.1,
+    }),
   });
 
-  let text = response.choices?.[0]?.message?.content ?? "";
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => "");
+    if (response.status === 429) {
+      throw new GenerationError("Groq rate-limited the request. Try again later.", 429);
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new GenerationError("Groq rejected the configured API key.", 502);
+    }
+    if (errorBody) {
+      console.error(`Groq API error (${response.status}):`, errorBody);
+    }
+    throw new GenerationError("Groq could not process the request.", 502);
+  }
+
+  const data = await response.json() as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+
+  let text = data.choices?.[0]?.message?.content ?? "";
   text = text.trim();
   if (!text) {
     throw new GenerationError("The AI service returned an empty response.");
   }
+
   // Strip markdown code fences if present
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -99,29 +104,28 @@ async function requestGeneration(
   return modelOutputSchema.parse(parsed);
 }
 
-export async function generateTestCases(content: string, _provider?: LlmProvider) {
-  const client = buildClient();
+export async function generateTestCases(content: string) {
   const model = getModel();
   let firstError: unknown;
 
   try {
-    const output = await requestGeneration(client, model, content);
+    const output = await requestGeneration(model, content);
     return output.kind === "clarification"
       ? { kind: "clarification" as const, questions: output.questions }
       : { kind: "success" as const, testCases: normalizeModelOutput(output) };
   } catch (error) {
-    rethrowApiError(error, "Groq");
+    if (error instanceof GenerationError) throw error;
     firstError = error;
   }
 
   try {
     const feedback = firstError instanceof Error ? firstError.message : "Malformed output";
-    const output = await requestGeneration(client, model, content, feedback.slice(0, 300));
+    const output = await requestGeneration(model, content, feedback.slice(0, 300));
     return output.kind === "clarification"
       ? { kind: "clarification" as const, questions: output.questions }
       : { kind: "success" as const, testCases: normalizeModelOutput(output) };
   } catch (error) {
-    rethrowApiError(error, "Groq");
+    if (error instanceof GenerationError) throw error;
     throw new GenerationError(
       "The AI response was invalid after two attempts. Please try again.",
     );
