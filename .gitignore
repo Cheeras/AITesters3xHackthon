@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# Next.js output
+/.next
+/out
+
+# test output
+/coverage
+
+# local secrets
+.env*
+!.env.example
+
+# logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+.env
+.env.example
+.next
+*.txt
